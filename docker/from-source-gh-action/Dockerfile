@@ -45,7 +45,12 @@ RUN cd builddir && tar xf poco-1.12.5p2-all.tar.gz && cd poco-1.12.5p2-all/ && \
 
 COPY / $BUILDDIR/
 
-RUN bash build.sh
+# Cache the core repo and ccache across builds so we don't re-clone
+# LibreOffice core + submodules on every build. build.sh skips cloning
+# if core/ already exists, and ccache speeds up recompilation.
+RUN --mount=type=cache,target=/build/builddir/core \
+    --mount=type=cache,target=/root/.ccache \
+    bash build.sh
 
 # Build the final image
 FROM ubuntu:24.04
