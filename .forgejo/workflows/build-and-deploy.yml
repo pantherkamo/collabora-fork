@@ -3,10 +3,21 @@ name: build-and-deploy
 on:
   push:
     branches: ["main"]
-  workflow_dispatch: {}
+    paths-ignore:
+      - ".forgejo/**"
+      - ".github/**"
+      - "k8s/**"
+      - "*.md"
+  workflow_dispatch:
+    inputs:
+      skip_build:
+        description: "Skip build and deploy existing latest image"
+        required: false
+        default: "false"
 
 env:
   IMAGE: ${{ secrets.REGISTRY_HOST }}/kamo/collabora-online:${{ github.sha }}
+  IMAGE_LATEST: ${{ secrets.REGISTRY_HOST }}/kamo/collabora-online:latest
   K8S_NAMESPACE: kamo
   DEPLOYMENT_NAME: collabora-deployment
   CONTAINER_NAME: collabora
@@ -15,9 +26,7 @@ jobs:
   build:
     runs-on: [self-hosted, cidi]
     timeout-minutes: 180
-    outputs:
-      image: ${{ env.IMAGE }}
-      sha: ${{ github.sha }}
+    if: ${{ github.event.inputs.skip_build != 'true' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -67,7 +76,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE }}
-            ${{ secrets.REGISTRY_HOST }}/kamo/collabora-online:latest
+            ${{ env.IMAGE_LATEST }}
           file: ./docker/from-source-gh-action/Dockerfile
           build-args: |
             COLLABORA_ONLINE_REPO=http://k0m1:3000/kamo/collabora-fork.git
@@ -75,6 +84,7 @@ jobs:
 
   deploy_k1m1:
     needs: build
+    if: ${{ always() && (needs.build.result == 'success' || github.event.inputs.skip_build == 'true') }}
     runs-on: [self-hosted, cidi]
     environment: production
 
@@ -145,11 +155,21 @@ jobs:
             --docker-password="$REGISTRY_TOKEN" \
             --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Apply K8s manifests (K1M1)
+        run: |
+          set -euxo pipefail
+          kubectl -n "$K8S_NAMESPACE" apply -f k8s/
+
       - name: Update image & rollout (K1M1)
         id: rollout-k1m1
         run: |
           set -euxo pipefail
-          kubectl -n "$K8S_NAMESPACE" set image deploy/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$IMAGE"
+          if [ "${{ github.event.inputs.skip_build }}" = "true" ]; then
+            DEPLOY_IMAGE="${IMAGE_LATEST}"
+          else
+            DEPLOY_IMAGE="${IMAGE}"
+          fi
+          kubectl -n "$K8S_NAMESPACE" set image deploy/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$DEPLOY_IMAGE"
           kubectl -n "$K8S_NAMESPACE" rollout status deploy/"$DEPLOYMENT_NAME" --timeout=600s
 
       - name: Rollout failure diagnostics (K1M1)
@@ -168,7 +188,7 @@ jobs:
     needs: build
     runs-on: [self-hosted, cidi]
     environment: production
-    if: always() && !failure() && !cancelled()
+    if: ${{ always() && (needs.build.result == 'success' || github.event.inputs.skip_build == 'true') }}
 
     steps:
       - uses: actions/checkout@v4
@@ -237,11 +257,21 @@ jobs:
             --docker-password="$REGISTRY_TOKEN" \
             --dry-run=client -o yaml | kubectl apply -f -
 
+      - name: Apply K8s manifests (K2M1)
+        run: |
+          set -euxo pipefail
+          kubectl -n "$K8S_NAMESPACE" apply -f k8s/
+
       - name: Update image & rollout (K2M1)
         id: rollout-k2m1
         run: |
           set -euxo pipefail
-          kubectl -n "$K8S_NAMESPACE" set image deploy/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$IMAGE"
+          if [ "${{ github.event.inputs.skip_build }}" = "true" ]; then
+            DEPLOY_IMAGE="${IMAGE_LATEST}"
+          else
+            DEPLOY_IMAGE="${IMAGE}"
+          fi
+          kubectl -n "$K8S_NAMESPACE" set image deploy/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$DEPLOY_IMAGE"
           kubectl -n "$K8S_NAMESPACE" rollout status deploy/"$DEPLOYMENT_NAME" --timeout=600s
 
       - name: Rollout failure diagnostics (K2M1)

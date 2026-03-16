@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: collabora-deployment
+  namespace: kamo
+  labels:
+    app: collabora
+spec:
+  replicas: 1
+  progressDeadlineSeconds: 600
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: collabora
+  template:
+    metadata:
+      labels:
+        app: collabora
+    spec:
+      terminationGracePeriodSeconds: 10
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: collabora
+          image: redis.kamo.svc.cluster.local:5000/kamo/collabora-online:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9980
+          env:
+            - name: server_name
+              value: "docs.kamocrm.com"
+            - name: aliasgroup1
+              value: "https://docs-api.kamocrm.com:443"
+            - name: extra_params
+              value: "--o:ssl.enable=false --o:ssl.termination=true"
+            - name: dictionaries
+              value: "en_US"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: "4"
+              memory: 4Gi
+          startupProbe:
+            httpGet:
+              path: /hosting/discovery
+              port: 9980
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 18
+            successThreshold: 1
+          readinessProbe:
+            httpGet:
+              path: /hosting/discovery
+              port: 9980
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /hosting/discovery
+              port: 9980
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
