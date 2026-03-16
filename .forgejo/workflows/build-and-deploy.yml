@@ -25,7 +25,7 @@ env:
 jobs:
   build:
     runs-on: [self-hosted, cidi]
-    timeout-minutes: 180
+    timeout-minutes: 360
 
     steps:
       - name: Skip build

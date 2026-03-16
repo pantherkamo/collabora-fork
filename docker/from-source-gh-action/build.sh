@@ -4,12 +4,18 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 # -- Available env vars --
-# * CORE_ASSETS  - which prebuilt assets to build in core
+# * CORE_ASSETS  - which prebuilt assets to build in core (skips source build)
 # * CORE_BRANCH  - which branch to build in core
 # * COLLABORA_ONLINE_REPO - which git repo to clone online from
 # * COLLABORA_ONLINE_BRANCH - which branch to build in online
 # * CORE_BUILD_TARGET - which make target to run (in core repo)
 # * ONLINE_EXTRA_BUILD_OPTIONS - extra build options for online
+# * PRODUCT_NAME - product name shown in UI (default: "Office")
+
+if [ -z "$PRODUCT_NAME" ]; then
+  PRODUCT_NAME="Office"
+fi
+echo "Product name: '$PRODUCT_NAME'"
 
 if [ -z "$CORE_ASSETS" ]; then
   if [ -z "$CORE_BRANCH" ]; then
@@ -59,7 +65,6 @@ fi
 ##### cloning & updating #####
 
 # core repo
-# only if CORE_ASSETS is not set
 if [ -z "$CORE_ASSETS" ]; then
   if test ! -d core ; then
     git clone https://git.libreoffice.org/core || exit 1
@@ -81,17 +86,13 @@ fi
 
 ##### LOKit (core) #####
 
-# only if core assets are not set
 if [ -z "$CORE_ASSETS" ]; then
-  # build
-  if [ "$CORE_BRANCH" == "distro/collabora/co-22.05" ]; then
-    ( cd core && ./autogen.sh --with-distro=CPLinux-LOKit --disable-epm --without-package-format --disable-symbols ) || exit 1
-  else
-    ( cd core && ./autogen.sh --with-distro=LibreOfficeOnline ) || exit 1
-  fi
+  # Build core from source with custom product name
+  ( cd core && ./autogen.sh --with-distro=LibreOfficeOnline \
+      --with-product-name="$PRODUCT_NAME" \
+      --with-vendor="" ) || exit 1
   ( cd core && make $CORE_BUILD_TARGET ) || exit 1
 
-  # copy stuff
   mkdir -p "$INSTDIR"/opt/
   cp -a core/instdir "$INSTDIR"/opt/lokit
 else
@@ -100,9 +101,22 @@ else
   cp -a core/instdir "$INSTDIR"/opt/lokit
 fi
 
-##### rebrand core product name (XCU files only — XCD are binary) #####
+##### rebrand core config files #####
+
+# Patch plain-text XCU files and program rc files
 find "$INSTDIR"/opt/lokit -type f -name '*.xcu' \
-  -exec sed -i 's/Collabora Office/Office/g' {} + 2>/dev/null || true
+  -exec sed -i "s/Collabora Office/$PRODUCT_NAME/g" {} + 2>/dev/null || true
+
+# Patch versionrc / bootstraprc (plain text ini files that control dialog titles)
+for rcfile in "$INSTDIR"/opt/lokit/program/versionrc \
+              "$INSTDIR"/opt/lokit/program/bootstraprc \
+              "$INSTDIR"/opt/lokit/program/sofficerc; do
+  if [ -f "$rcfile" ]; then
+    sed -i "s/Collabora Office/$PRODUCT_NAME/g; s/CollaboraOffice/${PRODUCT_NAME// /}/g" "$rcfile"
+    echo "Patched $rcfile"
+    cat "$rcfile"
+  fi
+done
 
 ##### coolwsd & cool #####
 
