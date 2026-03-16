@@ -27,7 +27,7 @@ RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
     git build-essential zip ccache autoconf gperf nasm xsltproc flex bison \
     ant junit4 libfontconfig1-dev libfreetype6-dev libharfbuzz-dev \
     libicu-dev libnspr4-dev libnss3-dev libssl-dev libxml2-dev \
-    libxslt1-dev python3-dev libkrb5-dev
+    libxslt1-dev python3-dev libkrb5-dev gettext
 
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x -o nodesource_setup.sh && bash nodesource_setup.sh && apt install -y nodejs
 
