@@ -1,0 +1,12 @@
+This software is based on Collabora Online, originally developed by
+Collabora Productivity and the LibreOffice community.
+
+Original source: https://github.com/CollaboraOnline/online
+License: Mozilla Public License v2.0 (MPL 2.0)
+
+Modifications made by Kamo (https://github.com/pantherkamo):
+- Removed Collabora and LibreOffice branding (logos, product names, about dialog)
+- Replaced with organization-specific branding loaded via WOPI protocol
+- All original copyright headers and license terms are preserved
+
+This fork is maintained at: https://github.com/pantherkamo/collabora-fork
