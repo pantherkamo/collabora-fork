@@ -133,12 +133,11 @@ cp browser/images/dark/_originals/*.svg browser/images/dark/
 | `lc_rightpara.svg` | FormatAlignRight | `FormatAlignRight.js` |
 | `lc_justifypara.svg` | FormatAlignJustify | `FormatAlignJustify.js` |
 
-### Indentation & Spacing (3 icons)
+### Indentation & Spacing (2 icons)
 
 | Collabora File | MUI Icon Name | MUI JS File |
 |----------------|---------------|-------------|
 | `lc_decrementindent.svg` | FormatIndentDecrease | `FormatIndentDecrease.js` |
-| `lc_incrementindent.svg` | FormatIndentIncrease | `FormatIndentIncrease.js` |
 | `lc_linespacing.svg` | FormatLineSpacing | `FormatLineSpacing.js` |
 
 ### Insert Operations (4 icons)
@@ -196,7 +195,7 @@ These use the same MUI source as their `lc_` counterparts:
 | `compact_sortdescending.svg` | ArrowDownward |
 | `compact_sidebar.svg` | ViewSidebar |
 
-**Total: 44 lc_ icons + 20 compact icons = 64 icons x 2 themes = 128 file writes**
+**Total: 43 lc_ icons + 20 compact icons = 63 icons x 2 themes = 126 file writes**
 
 ## Script Details
 
