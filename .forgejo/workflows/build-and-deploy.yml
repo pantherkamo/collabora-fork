@@ -1,0 +1,257 @@
+name: build-and-deploy
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch: {}
+
+env:
+  IMAGE: ${{ secrets.REGISTRY_HOST }}/kamo/collabora-online:${{ github.sha }}
+  K8S_NAMESPACE: kamo
+  DEPLOYMENT_NAME: collabora-deployment
+  CONTAINER_NAME: collabora
+
+jobs:
+  build:
+    runs-on: [self-hosted, cidi]
+    timeout-minutes: 180
+    outputs:
+      image: ${{ env.IMAGE }}
+      sha: ${{ github.sha }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Workaround: forgejo-runner "stop-lxc.sh" cleanup bug ---
+      - name: Patch act cleanup script (no-op)
+        run: |
+          set -euxo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/../act/workflow"
+          cat > "$GITHUB_WORKSPACE/../act/workflow/stop-lxc.sh" <<'SH'
+          #!/usr/bin/env bash
+          # no-op to avoid runner's missing script failure
+          exit 0
+          SH
+          chmod +x "$GITHUB_WORKSPACE/../act/workflow/stop-lxc.sh"
+
+      - name: Login to registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.REGISTRY_HOST }}
+          username: ${{ secrets.REGISTRY_USER }}
+          password: ${{ secrets.REGISTRY_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+          buildkitd-flags: --allow-insecure-entitlement network.host
+          config-inline: |
+            [registry."${{ secrets.REGISTRY_HOST }}"]
+              http = true
+              insecure = true
+          driver: docker
+          use: true
+
+      - name: Ensure Docker login persists for Buildx
+        run: |
+          echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ${{ secrets.REGISTRY_HOST }} \
+            --username "${{ secrets.REGISTRY_USER }}" \
+            --password-stdin
+
+      - name: Build & push image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./docker/from-source-gh-action
+          push: true
+          tags: |
+            ${{ env.IMAGE }}
+            ${{ secrets.REGISTRY_HOST }}/kamo/collabora-online:latest
+          file: ./docker/from-source-gh-action/Dockerfile
+          build-args: |
+            COLLABORA_ONLINE_REPO=http://k0m1:3000/kamo/collabora-fork.git
+            COLLABORA_ONLINE_BRANCH=main
+
+  deploy_k1m1:
+    needs: build
+    runs-on: [self-hosted, cidi]
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubectl (user-space)
+        run: |
+          set -euxo pipefail
+          BIN="$RUNNER_TEMP/bin"
+          mkdir -p "$BIN"
+
+          if command -v kubectl >/dev/null 2>&1; then
+            KUBECTL_PATH=$(command -v kubectl)
+            ln -sf "$KUBECTL_PATH" "$BIN/kubectl"
+            echo "$BIN" >> "$GITHUB_PATH"
+            "$BIN/kubectl" version --client
+            exit 0
+          fi
+
+          CACHED_KUBECTL=$(find /var/lib/forgejo-runner/.cache/act -name kubectl -type f -executable 2>/dev/null | head -1)
+          if [ -n "$CACHED_KUBECTL" ] && [ -s "$CACHED_KUBECTL" ]; then
+            cp "$CACHED_KUBECTL" "$BIN/kubectl"
+            chmod +x "$BIN/kubectl"
+            echo "$BIN" >> "$GITHUB_PATH"
+            "$BIN/kubectl" version --client
+            exit 0
+          fi
+
+          KUBECTL_VERSION=$(curl -fsSL --max-time 10 --retry 3 --retry-delay 2 --ipv4 https://dl.k8s.io/release/stable.txt)
+          curl -fsSL --ipv4 --max-time 120 --connect-timeout 10 --retry 3 --retry-delay 5 \
+            "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
+            -o "$BIN/kubectl" || {
+            wget --timeout=120 --tries=3 --wait=5 --ipv4 \
+              "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
+              -O "$BIN/kubectl" || exit 1
+          }
+          chmod +x "$BIN/kubectl"
+          echo "$BIN" >> "$GITHUB_PATH"
+          "$BIN/kubectl" version --client
+
+      - name: Write kubeconfig (k1m1)
+        env:
+          K1M1_KUBECONFIG_B64: ${{ secrets.K1M1_KUBECONFIG_B64 }}
+        run: |
+          set -euxo pipefail
+          KCFG="$RUNNER_TEMP/kubeconfig"
+          printf '%s' "$K1M1_KUBECONFIG_B64" | base64 -d > "$KCFG"
+          chmod 600 "$KCFG"
+          export KUBECONFIG="$KCFG"
+          CONTEXT=$(kubectl config current-context)
+          CLUSTER=$(kubectl config view -o jsonpath="{.contexts[?(@.name==\"$CONTEXT\")].context.cluster}")
+          kubectl config set-cluster "$CLUSTER" --server=https://10.8.1.1:6443 --insecure-skip-tls-verify=true
+          echo "KUBECONFIG=$KCFG" >> "$GITHUB_ENV"
+
+      - name: Ensure namespace + image pull secret (K1M1)
+        env:
+          REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          set -euxo pipefail
+          ns="${K8S_NAMESPACE}"
+          kubectl get ns "$ns" >/dev/null 2>&1 || kubectl create ns "$ns"
+          kubectl -n "$ns" create secret docker-registry regcred \
+            --docker-server="$REGISTRY_HOST" \
+            --docker-username="$REGISTRY_USER" \
+            --docker-password="$REGISTRY_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Update image & rollout (K1M1)
+        id: rollout-k1m1
+        run: |
+          set -euxo pipefail
+          kubectl -n "$K8S_NAMESPACE" set image deploy/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$IMAGE"
+          kubectl -n "$K8S_NAMESPACE" rollout status deploy/"$DEPLOYMENT_NAME" --timeout=600s
+
+      - name: Rollout failure diagnostics (K1M1)
+        if: failure() && steps.rollout-k1m1.outcome == 'failure'
+        run: |
+          set -euxo pipefail
+          kubectl -n "$K8S_NAMESPACE" get deploy "$DEPLOYMENT_NAME" -o wide || true
+          kubectl -n "$K8S_NAMESPACE" get pods -l app=collabora -o wide || true
+          POD=$(kubectl -n "$K8S_NAMESPACE" get pods -l app=collabora --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}' 2>/dev/null || true)
+          if [ -n "$POD" ]; then
+            kubectl -n "$K8S_NAMESPACE" describe pod "$POD" || true
+            kubectl -n "$K8S_NAMESPACE" logs "$POD" --tail=200 --all-containers=true || true
+          fi
+
+  deploy_k2m1:
+    needs: build
+    runs-on: [self-hosted, cidi]
+    environment: production
+    if: always() && !failure() && !cancelled()
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubectl (user-space)
+        run: |
+          set -euxo pipefail
+          BIN="$RUNNER_TEMP/bin"
+          mkdir -p "$BIN"
+
+          if command -v kubectl >/dev/null 2>&1; then
+            KUBECTL_PATH=$(command -v kubectl)
+            ln -sf "$KUBECTL_PATH" "$BIN/kubectl"
+            echo "$BIN" >> "$GITHUB_PATH"
+            "$BIN/kubectl" version --client
+            exit 0
+          fi
+
+          CACHED_KUBECTL=$(find /var/lib/forgejo-runner/.cache/act -name kubectl -type f -executable 2>/dev/null | head -1)
+          if [ -n "$CACHED_KUBECTL" ] && [ -s "$CACHED_KUBECTL" ]; then
+            cp "$CACHED_KUBECTL" "$BIN/kubectl"
+            chmod +x "$BIN/kubectl"
+            echo "$BIN" >> "$GITHUB_PATH"
+            "$BIN/kubectl" version --client
+            exit 0
+          fi
+
+          KUBECTL_VERSION=$(curl -fsSL --max-time 10 --retry 3 --retry-delay 2 --ipv4 https://dl.k8s.io/release/stable.txt)
+          curl -fsSL --ipv4 --max-time 120 --connect-timeout 10 --retry 3 --retry-delay 5 \
+            "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
+            -o "$BIN/kubectl" || {
+            wget --timeout=120 --tries=3 --wait=5 --ipv4 \
+              "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
+              -O "$BIN/kubectl" || exit 1
+          }
+          chmod +x "$BIN/kubectl"
+          echo "$BIN" >> "$GITHUB_PATH"
+          "$BIN/kubectl" version --client
+
+      - name: Write kubeconfig (k2m1)
+        env:
+          K2M1_KUBECONFIG_B64: ${{ secrets.K2M1_KUBECONFIG_B64 }}
+        run: |
+          set -euxo pipefail
+          KCFG="$RUNNER_TEMP/kubeconfig-k2m1"
+          printf '%s' "$K2M1_KUBECONFIG_B64" | base64 -d > "$KCFG"
+          chmod 600 "$KCFG"
+          export KUBECONFIG="$KCFG"
+          CONTEXT=$(kubectl config current-context)
+          CLUSTER=$(kubectl config view -o jsonpath="{.contexts[?(@.name==\"$CONTEXT\")].context.cluster}")
+          kubectl config set-cluster "$CLUSTER" --server=https://10.8.2.1:6443 --insecure-skip-tls-verify=true
+          echo "KUBECONFIG=$KCFG" >> "$GITHUB_ENV"
+
+      - name: Ensure namespace + image pull secret (K2M1)
+        env:
+          REGISTRY_HOST: ${{ secrets.REGISTRY_HOST }}
+          REGISTRY_USER: ${{ secrets.REGISTRY_USER }}
+          REGISTRY_TOKEN: ${{ secrets.REGISTRY_TOKEN }}
+        run: |
+          set -euxo pipefail
+          ns="${K8S_NAMESPACE}"
+          kubectl get ns "$ns" >/dev/null 2>&1 || kubectl create ns "$ns"
+          kubectl -n "$ns" create secret docker-registry regcred \
+            --docker-server="$REGISTRY_HOST" \
+            --docker-username="$REGISTRY_USER" \
+            --docker-password="$REGISTRY_TOKEN" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Update image & rollout (K2M1)
+        id: rollout-k2m1
+        run: |
+          set -euxo pipefail
+          kubectl -n "$K8S_NAMESPACE" set image deploy/"$DEPLOYMENT_NAME" "$CONTAINER_NAME"="$IMAGE"
+          kubectl -n "$K8S_NAMESPACE" rollout status deploy/"$DEPLOYMENT_NAME" --timeout=600s
+
+      - name: Rollout failure diagnostics (K2M1)
+        if: failure() && steps.rollout-k2m1.outcome == 'failure'
+        run: |
+          set -euxo pipefail
+          kubectl -n "$K8S_NAMESPACE" get deploy "$DEPLOYMENT_NAME" -o wide || true
+          kubectl -n "$K8S_NAMESPACE" get pods -l app=collabora -o wide || true
+          POD=$(kubectl -n "$K8S_NAMESPACE" get pods -l app=collabora --sort-by=.metadata.creationTimestamp -o jsonpath='{.items[-1].metadata.name}' 2>/dev/null || true)
+          if [ -n "$POD" ]; then
+            kubectl -n "$K8S_NAMESPACE" describe pod "$POD" || true
+            kubectl -n "$K8S_NAMESPACE" logs "$POD" --tail=200 --all-containers=true || true
+          fi
