@@ -67,10 +67,10 @@ fi
 # core repo
 if [ -z "$CORE_ASSETS" ]; then
   if test ! -d core ; then
-    git clone https://git.libreoffice.org/core || exit 1
+    git clone --depth=1 --branch $CORE_BRANCH https://git.libreoffice.org/core || exit 1
   fi
 
-  ( cd core && git fetch --all && git checkout $CORE_BRANCH && ./g pull -r ) || exit 1
+  ( cd core && git fetch --depth=1 origin $CORE_BRANCH && git checkout $CORE_BRANCH && git submodule update --init --depth=1 ) || exit 1
 else
   mkdir -p core
   ( cd core/ && wget "$CORE_ASSETS" -O core-assets.tar.xz && tar -xzf core-assets.tar.xz && rm core-assets.tar.xz) || exit 1
