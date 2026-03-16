@@ -34,7 +34,7 @@ spec:
             - name: server_name
               value: "docs.kamocrm.com"
             - name: aliasgroup1
-              value: "https://api.kamocrm.com:443"
+              value: "https://docs-api.kamocrm.com:443"
             - name: extra_params
               value: "--o:ssl.enable=false --o:ssl.termination=true"
             - name: dictionaries
