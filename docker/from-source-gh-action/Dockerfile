@@ -1,3 +1,6 @@
+# Modified by Kamo (https://github.com/pantherkamo/collabora-fork)
+# Changes: Removed original branding, replaced with organization-specific branding
+
 FROM ubuntu:24.04 AS builder
 
 ENV CORE_ASSETS=https://github.com/CollaboraOnline/online/releases/download/for-code-assets/core-co-25.04-assets.tar.gz

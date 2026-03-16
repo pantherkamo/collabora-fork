@@ -6,12 +6,15 @@
 
 FROM debian:stable-slim
 
+# Modified by Kamo (https://github.com/pantherkamo/collabora-fork)
+# Changes: Removed original branding, replaced with organization-specific branding
+
 # some descriptive metadata - docker image inspect
 ARG author
-LABEL author=${author:-"Collabora Productivity Ltd."}
-LABEL description="Collabora Online is a powerful collaborative Office suite that supports all major document, spreadsheet and presentation file formats, which you can integrate into your own infrastructure. Collabora Online provides data security and sovereignty, and is ideally suited to the demands of a modern distributed working environment. Delivering a familiar look and feel, Collabora Online represents a real alternative to other big-brands solutions, giving you control and flexibility."
+LABEL author=${author:-"Kamo (https://github.com/pantherkamo)"}
+LABEL description="Document editor server based on Collabora Online"
 ARG releasenotes
-LABEL release.notes=${releasenotes:-"https://www.collaboraonline.com/code-25-04-release-notes/"}
+LABEL release.notes=${releasenotes:-""}
 ARG version
 LABEL version=${version:-"25.04.1.1"}
 ARG coretag
