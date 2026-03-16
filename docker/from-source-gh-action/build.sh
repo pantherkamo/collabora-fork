@@ -66,7 +66,8 @@ fi
 
 # core repo
 if [ -z "$CORE_ASSETS" ]; then
-  if test ! -d core ; then
+  if test ! -d core/.git ; then
+    rm -rf core  # remove empty cache mount dir if present
     git clone --depth=1 --branch $CORE_BRANCH https://git.libreoffice.org/core || exit 1
   fi
 
