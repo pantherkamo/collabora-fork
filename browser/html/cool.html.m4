@@ -22,6 +22,9 @@ m4_dnl# re-connects to the COOL server when possible.)
 m4_dnl
 m4_ifelse(EMSCRIPTENAPP,[true],[m4_define([MOBILEAPP],[true])])m4_dnl
 m4_dnl------------------------------------------------------------------------
+m4_dnl Modified by Kamo (https://github.com/pantherkamo/collabora-fork)
+m4_dnl Changes: Removed original branding, replaced with organization-specific branding
+m4_dnl------------------------------------------------------------------------
 <!DOCTYPE html>
 m4_ifelse(IOSAPP,[true],
 <!-- Related to issue #5841: the iOS app sets the base text direction via the "dir" parameter -->
@@ -229,7 +232,7 @@ m4_ifelse(MOBILEAPP,[true],
       <div id="about-dialog" tabIndex="0">
         <div id="about-dialog-header">
           <fig id="integrator-logo"></fig>
-          <h1 id="product-name">Collabora Online</h1>
+          <h1 id="product-name"></h1>
         </div>
         <hr/>
         <div id="about-dialog-container">

@@ -8,10 +8,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
+// Modified by Kamo (https://github.com/pantherkamo/collabora-fork)
+// Changes: Removed original branding, replaced with organization-specific branding
 /* Stringtable for Admin Console User Interface */
 var l10nstrings = {};
 
-l10nstrings.strProductName = 'Collabora Online Development Edition (unbranded)';
+l10nstrings.strProductName = '';
 l10nstrings.strAdminConsole = _('Admin console');
 l10nstrings.strSettings = _('Settings');
 l10nstrings.strOverview = _('Overview');

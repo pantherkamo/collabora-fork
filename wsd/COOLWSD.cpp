@@ -9,6 +9,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+// Modified by Kamo (https://github.com/pantherkamo/collabora-fork)
+// Changes: Removed original branding, replaced with organization-specific branding
+
 /*
  * Implementation of main server application logic.
  * Classes: COOLWSD
@@ -2623,7 +2626,7 @@ void COOLWSD::displayHelp()
     Poco::Util::HelpFormatter helpFormatter(options());
     helpFormatter.setCommand(commandName());
     helpFormatter.setUsage("OPTIONS");
-    helpFormatter.setHeader("Collabora Online WebSocket server.");
+    helpFormatter.setHeader("Document editor WebSocket server.");
     helpFormatter.format(std::cout);
 }
 

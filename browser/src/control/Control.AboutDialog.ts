@@ -11,6 +11,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+// Modified by Kamo (https://github.com/pantherkamo/collabora-fork)
+// Changes: Removed original branding, replaced with organization-specific branding
+
 /*
  * AboutDialog - implements Help - About dialog with version and warnings
  */
@@ -114,13 +117,13 @@ class AboutDialog {
 			productName =
 				typeof brandProductName === 'string' && brandProductName.length > 0
 					? brandProductName
-					: 'Collabora Online Development Edition (unbranded)';
+					: '';
 		}
 
 		const productURL =
 			typeof brandProductURL === 'string' && brandProductURL.length > 0
 				? brandProductURL
-				: 'https://collaboraonline.github.io/';
+				: '';
 
 		const productNameElement = content.querySelector(
 			'#product-name',
@@ -235,6 +238,20 @@ class AboutDialog {
 			);
 			elements.licenseInfo.appendChild(licenseLink);
 		}
+
+		// Attribution
+		const attribution = document.createElement('p');
+		attribution.className = 'about-dialog-info-div';
+		attribution.setAttribute('dir', 'ltr');
+		const attrText = document.createTextNode('Based on ');
+		attribution.appendChild(attrText);
+		const attrLink = document.createElement('a');
+		attrLink.href = 'https://github.com/pantherkamo/collabora-fork';
+		attrLink.target = '_blank';
+		attrLink.textContent = 'Collabora Online';
+		attribution.appendChild(attrLink);
+		attribution.appendChild(document.createTextNode(' (MPL 2.0)'));
+		infoDiv.appendChild(attribution);
 
 		// Copyright and vendor
 		const span = document.createElement('span');

@@ -22,13 +22,16 @@ m4_dnl# re-connects to the COOL server when possible.)
 m4_dnl
 m4_ifelse(EMSCRIPTENAPP,[true],[m4_define([ MOBILEAPP],[true])])m4_dnl
 m4_dnl------------------------------------------------------------------------
+m4_dnl Modified by Kamo (https://github.com/pantherkamo/collabora-fork)
+m4_dnl Changes: Removed original branding, replaced with organization-specific branding
+m4_dnl------------------------------------------------------------------------
 <!doctype html>
 <html data-theme="%UI_THEME%">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     m4_ifelse(MOBILEAPP, [], [<link rel="localizations" href="%SERVICE_ROOT%/browser/%VERSION%/l10n/localizations.json" type="application/vnd.oftn.l10n+json"/>])
-    <title>Collabora Online - Settings</title>
+    <title>Settings</title>
     <link
       rel="StyleSheet"
       href="m4_ifelse(MOBILEAPP, [], [%SERVICE_ROOT%/browser/%VERSION%/])admin/css/admin.css"

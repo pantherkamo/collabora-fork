@@ -1,4 +1,6 @@
 # -*- Mode: Autoconf; tab-width: 4; indent-tabs-mode: nil -*-
+# Modified by Kamo (https://github.com/pantherkamo/collabora-fork)
+# Changes: Removed original branding, replaced with organization-specific branding
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.63])
@@ -1234,7 +1236,7 @@ else
       <enable type=\"bool\" desc=\"Controls whether the welcome screen should be shown to the users on new install and updates. When enabled, your custom welcome screen must be created at /usr/share/coolwsd/browser/dist/welcome/welcome.html.\" default=\"false\">false</enable>
     </welcome>"
     CONFIG_INTERFACE_FRAGMENT="<brandProductName desc=\"Change the displayed name the application will have for the user.\" type=\"string\"></brandProductName>
-    <brandProductURL desc=\"Change the product URL, empty makes disable the link\" type=\"string\">https://www.collaboraonline.com</brandProductURL>
+    <brandProductURL desc=\"Change the product URL, empty makes disable the link\" type=\"string\"></brandProductURL>
     <logoURL desc=\"Change the URL of the logo used by Collabora Online, use none to hide it.\" type=\"string\"></logoURL>"
 fi
 
