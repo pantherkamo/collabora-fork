@@ -100,6 +100,10 @@ else
   cp -a core/instdir "$INSTDIR"/opt/lokit
 fi
 
+##### rebrand core product name #####
+find "$INSTDIR"/opt/lokit -type f \( -name '*.xcu' -o -name '*.xcd' \) \
+  -exec sed -i 's/Collabora Office/Office/g' {} + 2>/dev/null || true
+
 ##### coolwsd & cool #####
 
 # build

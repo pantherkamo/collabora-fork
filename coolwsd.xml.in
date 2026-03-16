@@ -268,6 +268,9 @@
       <statusbar_save_indicator desc="Show saving status indicator in the statusbar" type="bool" default="true">true</statusbar_save_indicator>
 
       @CONFIG_INTERFACE_FRAGMENT@
+      <brandProductName desc="Change the displayed name the application will have for the user." type="string">Office</brandProductName>
+      <brandProductURL desc="Change the product URL, empty disables the link" type="string"></brandProductURL>
+      <logoURL desc="Change the URL of the logo, use none to hide it." type="string">none</logoURL>
 
     </user_interface>
 
