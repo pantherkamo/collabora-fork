@@ -29,23 +29,26 @@ The `@mui/icons-material` package (v7.3.1) is already installed in `kamo-interna
 createSvgIcon(jsx("path", { d: "M17 3H5c-1.11..." }), 'Save')
 ```
 
-The script extracts all `d:` attributes. Most icons have a single `<path>`; some (like `ZoomIn`) have multiple.
+The script extracts all `d:` attributes using a regex that matches all occurrences. Most icons have a single `<path>`; some (like `ZoomIn`) have multiple paths that must all be included.
 
 ### SVG Template
 
-**Light theme** (`browser/images/`):
+**Single-path icon (light theme):**
 ```xml
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
   <path d="..." fill="#3a3a38"/>
 </svg>
 ```
 
-**Dark theme** (`browser/images/dark/`):
+**Multi-path icon (light theme, e.g., ZoomIn):**
 ```xml
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-  <path d="..." fill="#fafafa"/>
+  <path d="..." fill="#3a3a38"/>
+  <path d="..." fill="#3a3a38"/>
 </svg>
 ```
+
+Dark theme variants use `fill="#fafafa"` instead of `fill="#3a3a38"`.
 
 ### Color Rules
 
@@ -54,7 +57,17 @@ The script extracts all `d:` attributes. Most icons have a single `<path>`; some
 | Light | `#3a3a38` | Matches collabora's existing primary icon color (dark gray) |
 | Dark  | `#fafafa`  | Matches collabora's existing dark-theme primary (inverted) |
 
-No accent colors (blue/red) are applied. The original collabora icons use blue (#1e8bcd) for certain semantic actions (e.g., undo) and red (#ed3d3d) for destructive actions (e.g., delete), but MUI icons are single-color by design. All replaced icons use the standard primary color for both themes.
+Most icons use the primary color. However, to preserve semantic meaning, the following icons use accent colors matching collabora's existing palette:
+
+| Icon | Light Fill | Dark Fill | Reason |
+|------|-----------|-----------|--------|
+| `lc_undo.svg`, `compact_undo.svg` | `#1e8bcd` | `#1e8bcd` | Matches existing blue accent for undo |
+| `lc_redo.svg`, `compact_redo.svg` | `#1e8bcd` | `#1e8bcd` | Matches existing blue accent for redo |
+| `lc_delete.svg` | `#ed3d3d` | `#ed3d3d` | Matches existing red for destructive actions |
+
+The script supports a per-icon color override map. Icons not in the override map default to `#3a3a38` (light) / `#fafafa` (dark).
+
+**Note on visual fidelity:** Some existing collabora icons (e.g., `lc_save.svg`) use multi-tone coloring with CSS classes (`.icon-primary`, `.icon-white`, `.icon-gray`) to create detailed, multi-color icons. The MUI replacements are flat single-color icons, which is a deliberate trade-off for cross-project consistency.
 
 ### Backup Strategy
 
@@ -62,7 +75,13 @@ Before overwriting, originals are copied to:
 - `browser/images/_originals/`
 - `browser/images/dark/_originals/`
 
-This makes the change reversible.
+This makes the change reversible. Rollback command:
+
+```bash
+# Restore originals
+cp browser/images/_originals/*.svg browser/images/
+cp browser/images/dark/_originals/*.svg browser/images/dark/
+```
 
 ## Icon Mapping
 
@@ -78,7 +97,7 @@ This makes the change reversible.
 | `lc_print.svg` | Print | `Print.js` |
 | `lc_printpreview.svg` | PrintOutlined | `PrintOutlined.js` |
 
-### Edit Operations (10 icons)
+### Edit Operations (9 icons)
 
 | Collabora File | MUI Icon Name | MUI JS File |
 |----------------|---------------|-------------|
@@ -114,11 +133,12 @@ This makes the change reversible.
 | `lc_rightpara.svg` | FormatAlignRight | `FormatAlignRight.js` |
 | `lc_justifypara.svg` | FormatAlignJustify | `FormatAlignJustify.js` |
 
-### Indentation & Spacing (2 icons)
+### Indentation & Spacing (3 icons)
 
 | Collabora File | MUI Icon Name | MUI JS File |
 |----------------|---------------|-------------|
 | `lc_decrementindent.svg` | FormatIndentDecrease | `FormatIndentDecrease.js` |
+| `lc_incrementindent.svg` | FormatIndentIncrease | `FormatIndentIncrease.js` |
 | `lc_linespacing.svg` | FormatLineSpacing | `FormatLineSpacing.js` |
 
 ### Insert Operations (4 icons)
@@ -166,16 +186,17 @@ These use the same MUI source as their `lc_` counterparts:
 | `compact_centerpara.svg` | FormatAlignCenter |
 | `compact_leftpara.svg` | FormatAlignLeft |
 | `compact_rightpara.svg` | FormatAlignRight |
-| `compact_justifypara.svg` | FormatAlignJustify (not available — skip) |
+| `compact_justifypara.svg` | FormatAlignJustify |
 | `compact_decrementindent.svg` | FormatIndentDecrease |
 | `compact_linespacing.svg` | FormatLineSpacing |
 | `compact_fontcolor.svg` | FormatColorText |
 | `compact_fillcolor.svg` | FormatColorFill |
+| `compact_backcolor.svg` | FormatColorFill |
 | `compact_sortascending.svg` | ArrowUpward |
 | `compact_sortdescending.svg` | ArrowDownward |
 | `compact_sidebar.svg` | ViewSidebar |
 
-**Total: ~44 lc_ icons + ~19 compact icons = ~63 icons x 2 themes = ~126 file writes**
+**Total: 44 lc_ icons + 20 compact icons = 64 icons x 2 themes = 128 file writes**
 
 ## Script Details
 
@@ -208,3 +229,7 @@ These use the same MUI source as their `lc_` counterparts:
 - Localized icon variants (`browser/images/ar/`, `browser/images/de/`, etc.) — left as-is
 - CSS files — no changes
 - No new dependencies added to the collabora-fork project
+
+## Validation
+
+After running the script, visually verify by opening a test document in the collabora instance and checking toolbar icons. The script also prints a summary of all replaced/skipped/failed icons for quick review.
