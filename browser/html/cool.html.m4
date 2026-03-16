@@ -35,17 +35,34 @@ m4_ifelse(IOSAPP,[true],
 <title>Loading...</title>
 <script>
 (function() {
-  var params = new URLSearchParams(window.location.search);
-  var theme = params.get('theme');
-  if (theme) {
+  // Derive the org theme path from the WOPISrc hostname
+  // Mirrors kamo-internal Theme.tsx getThemePath() logic
+  function getThemePath() {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var wopiSrc = params.get('WOPISrc') || '';
+      var hostname = '';
+      if (wopiSrc) {
+        try { hostname = new URL(wopiSrc).hostname; } catch(e) {}
+      }
+      if (!hostname) hostname = window.location.hostname;
+      var parts = hostname.split('.');
+      if (parts.length < 2) return '';
+      var tld = parts.pop();
+      var mainDomain = parts.pop();
+      if (!mainDomain || !tld) return '';
+      return 'https://theme.' + mainDomain + '.' + tld + '/public/' + mainDomain + '-' + tld;
+    } catch(e) { return ''; }
+  }
+  var themePath = getThemePath();
+  if (themePath) {
+    window._orgThemePath = themePath + '/img';
     // Set favicon from org theme
     var link = document.createElement('link');
     link.rel = 'icon';
     link.type = 'image/svg+xml';
-    link.href = theme + '/logo.svg';
+    link.href = themePath + '/img/logo.svg';
     document.head.appendChild(link);
-    // Store for later use by global.js / ProgressOverlay
-    window._orgThemePath = theme;
   }
 })();
 </script>
