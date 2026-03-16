@@ -100,8 +100,8 @@ else
   cp -a core/instdir "$INSTDIR"/opt/lokit
 fi
 
-##### rebrand core product name #####
-find "$INSTDIR"/opt/lokit -type f \( -name '*.xcu' -o -name '*.xcd' \) \
+##### rebrand core product name (XCU files only — XCD are binary) #####
+find "$INSTDIR"/opt/lokit -type f -name '*.xcu' \
   -exec sed -i 's/Collabora Office/Office/g' {} + 2>/dev/null || true
 
 ##### coolwsd & cool #####

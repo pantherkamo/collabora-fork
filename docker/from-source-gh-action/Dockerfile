@@ -65,10 +65,6 @@ RUN apt-get update \
 # copy freshly built LOKit and Collabora Online
 COPY --from=builder /build/instdir /
 
-# Override core product name: replace "Collabora Office" with "Office" in all XCU/XCD config files
-RUN find /opt/lokit /usr/share/coolwsd -type f \( -name '*.xcu' -o -name '*.xcd' \) \
-      -exec sed -i 's/Collabora Office/Office/g' {} + 2>/dev/null || true
-
 # copy the shell script which can start Collabora Online (coolwsd)
 COPY start-collabora-online.sh /start-collabora-online.sh
 RUN chmod +x /start-collabora-online.sh
