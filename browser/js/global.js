@@ -308,8 +308,11 @@ class InitializerBase {
 			window.brandProductURL = productURL;
 		}
 		let logoURL = document.getElementById("init-logo-url").value;
-		if (typeof logoURL === 'string' && logoURL.length) {
-			window.logoURL= logoURL;
+		// Prefer org-specific theme logo over static config
+		if (window._orgThemePath) {
+			window.logoURL = window._orgThemePath + '/logo-full.svg';
+		} else if (typeof logoURL === 'string' && logoURL.length) {
+			window.logoURL = logoURL;
 		}
 
 		this.initiateCoolParams();

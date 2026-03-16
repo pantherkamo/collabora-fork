@@ -32,7 +32,23 @@ m4_ifelse(IOSAPP,[true],
 ,
 <html %UI_RTL_SETTINGS%><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 )m4_dnl
-<title>Online Editor</title>
+<title>Loading...</title>
+<script>
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var theme = params.get('theme');
+  if (theme) {
+    // Set favicon from org theme
+    var link = document.createElement('link');
+    link.rel = 'icon';
+    link.type = 'image/svg+xml';
+    link.href = theme + '/logo.svg';
+    document.head.appendChild(link);
+    // Store for later use by global.js / ProgressOverlay
+    window._orgThemePath = theme;
+  }
+})();
+</script>
 <meta charset="utf-8">
 m4_ifelse(MOBILEAPP, [true],
 [
