@@ -12,22 +12,24 @@ ENV ONLINE_EXTRA_BUILD_OPTIONS=--enable-experimental
 WORKDIR /build
 
 RUN --mount=type=cache,target=/var/cache/apt apt-get update && \
-    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install libpng16-16 fontconfig adduser cpio tzdata \
-    findutils nano \
+    DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install \
+    # runtime dependencies (also needed at build time)
+    libpng16-16 fontconfig adduser cpio tzdata findutils \
     libcap2-bin openssl openssh-client \
     libxcb-shm0 libxcb-render0 libxrender1 libxext6 \
     fonts-wqy-zenhei fonts-wqy-microhei fonts-droid-fallback \
     fonts-noto-cjk \
-    libpoco-dev python3-polib libcap-dev npm \
+    # collabora online build dependencies
+    python3-polib libcap-dev npm \
     libpam-dev libzstd-dev wget git build-essential libtool \
-    libcap2-bin python3-lxml libpng-dev libcppunit-dev \
-    pkg-config fontconfig snapd chromium-browser \
-    rsync curl \
-    # core build dependencies (full source build)
-    git build-essential zip ccache autoconf gperf nasm xsltproc flex bison \
+    python3-lxml libpng-dev libcppunit-dev \
+    pkg-config chromium-browser rsync curl \
+    # core (LibreOffice) build dependencies
+    zip ccache automake autoconf gperf nasm xsltproc flex bison \
     ant junit4 libfontconfig1-dev libfreetype6-dev libharfbuzz-dev \
     libicu-dev libnspr4-dev libnss3-dev libssl-dev libxml2-dev \
-    libxslt1-dev python3-dev libkrb5-dev gettext
+    libxslt1-dev python3-dev libkrb5-dev gettext uuid-runtime \
+    zlib1g-dev
 
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x -o nodesource_setup.sh && bash nodesource_setup.sh && apt install -y nodejs
 
