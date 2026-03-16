@@ -26,13 +26,18 @@ jobs:
   build:
     runs-on: [self-hosted, cidi]
     timeout-minutes: 180
-    if: ${{ github.event.inputs.skip_build != 'true' }}
 
     steps:
+      - name: Skip build
+        if: ${{ github.event.inputs.skip_build == 'true' }}
+        run: echo "Skipping build — deploying existing latest image"
+
       - uses: actions/checkout@v4
+        if: ${{ github.event.inputs.skip_build != 'true' }}
 
       # --- Workaround: forgejo-runner "stop-lxc.sh" cleanup bug ---
       - name: Patch act cleanup script (no-op)
+        if: ${{ github.event.inputs.skip_build != 'true' }}
         run: |
           set -euxo pipefail
           mkdir -p "$GITHUB_WORKSPACE/../act/workflow"
@@ -44,6 +49,7 @@ jobs:
           chmod +x "$GITHUB_WORKSPACE/../act/workflow/stop-lxc.sh"
 
       - name: Login to registry
+        if: ${{ github.event.inputs.skip_build != 'true' }}
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.REGISTRY_HOST }}
@@ -51,6 +57,7 @@ jobs:
           password: ${{ secrets.REGISTRY_TOKEN }}
 
       - name: Set up Docker Buildx
+        if: ${{ github.event.inputs.skip_build != 'true' }}
         uses: docker/setup-buildx-action@v3
         with:
           driver-opts: |
@@ -64,12 +71,14 @@ jobs:
           use: true
 
       - name: Ensure Docker login persists for Buildx
+        if: ${{ github.event.inputs.skip_build != 'true' }}
         run: |
           echo "${{ secrets.REGISTRY_TOKEN }}" | docker login ${{ secrets.REGISTRY_HOST }} \
             --username "${{ secrets.REGISTRY_USER }}" \
             --password-stdin
 
       - name: Build & push image
+        if: ${{ github.event.inputs.skip_build != 'true' }}
         uses: docker/build-push-action@v5
         with:
           context: ./docker/from-source-gh-action
@@ -84,7 +93,6 @@ jobs:
 
   deploy_k1m1:
     needs: build
-    if: ${{ always() && (needs.build.result == 'success' || github.event.inputs.skip_build == 'true') }}
     runs-on: [self-hosted, cidi]
     environment: production
 
@@ -188,7 +196,7 @@ jobs:
     needs: build
     runs-on: [self-hosted, cidi]
     environment: production
-    if: ${{ always() && (needs.build.result == 'success' || github.event.inputs.skip_build == 'true') }}
+    if: false  # K2M1 is intentionally down
 
     steps:
       - uses: actions/checkout@v4
