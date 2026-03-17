@@ -60,12 +60,12 @@ ENV LC_CTYPE=C.UTF-8
 
 RUN apt-get update \
     && apt-get -y install libpng16-16 fontconfig adduser cpio tzdata \
-    findutils nano \
+    findutils \
     libcap2-bin openssl openssh-client \
     libxcb-shm0 libxcb-render0 libxrender1 libxext6 \
     fonts-wqy-zenhei fonts-wqy-microhei fonts-droid-fallback \
     fonts-noto-cjk ca-certificates \
-    libnss-wrapper \
+    libnss-wrapper libnspr4 libnss3 \
     && rm -rf /var/lib/apt/lists/*
 
 # copy freshly built LOKit and Collabora Online
