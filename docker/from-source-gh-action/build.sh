@@ -78,12 +78,12 @@ else
 fi
 
 
-# Clone online repo
+# Clone online repo (our fork with browser customizations)
 if test ! -d online ; then
   git clone --depth=1 "$COLLABORA_ONLINE_REPO" online || exit 1
 fi
 
-( cd online && git fetch --all && git checkout -f $COLLABORA_ONLINE_BRANCH && git clean -f -d && git pull -r ) || exit 1
+( cd online && git fetch --depth=1 origin $COLLABORA_ONLINE_BRANCH && git checkout -f $COLLABORA_ONLINE_BRANCH && git clean -f -d ) || exit 1
 
 ##### LOKit (core) #####
 

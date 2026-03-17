@@ -45,9 +45,8 @@ RUN cd builddir && tar xf poco-1.12.5p2-all.tar.gz && cd poco-1.12.5p2-all/ && \
 
 COPY / $BUILDDIR/
 
-# Bust the Docker layer cache when the online source changes.
-# The commit SHA changes on every push, forcing build.sh to re-run
-# and git-fetch the latest online source.
+# ARG busts the Docker layer cache when the commit SHA changes,
+# forcing build.sh to re-clone and rebuild the online source.
 ARG ONLINE_COMMIT_SHA=unknown
 RUN --mount=type=cache,target=/build/builddir/core \
     --mount=type=cache,target=/root/.ccache \
