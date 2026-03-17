@@ -174,12 +174,20 @@ window.L.Map.WOPI = window.L.Handler.extend({
 		if (wopiInfo['HideUserList'])
 			this.HideUserList = wopiInfo['HideUserList'].split(',');
 
-		// Read custom BrandName from WOPI CheckFileInfo for per-org branding
 		if (wopiInfo['BrandName']) {
 			window.brandProductName = wopiInfo['BrandName'];
-			document.title = this.BreadcrumbDocName + ' - ' + wopiInfo['BrandName'];
-		} else if (this.BreadcrumbDocName) {
-			document.title = this.BreadcrumbDocName;
+		}
+
+		// Set tab title as "Kamo {DocType}: {filename}"
+		if (this.BreadcrumbDocName) {
+			var docTypeMap = {
+				'text': 'Doc',
+				'spreadsheet': 'Sheet',
+				'presentation': 'Show',
+				'drawing': 'Draw'
+			};
+			var docType = docTypeMap[this._map.getDocType()] || 'Doc';
+			document.title = 'Kamo ' + docType + ': ' + this.BreadcrumbDocName;
 		}
 
 		this.sendFrameReady();

@@ -35,7 +35,7 @@ m4_ifelse(IOSAPP,[true],
 <title>Loading...</title>
 <script>
 (function() {
-  // Derive the org theme path from the WOPISrc hostname
+  // Derive the org theme path from the WOPISrc or current hostname
   // Mirrors kamo-internal Theme.tsx getThemePath() logic
   function getThemePath() {
     try {
@@ -56,12 +56,12 @@ m4_ifelse(IOSAPP,[true],
   }
   var themePath = getThemePath();
   if (themePath) {
-    window._orgThemePath = themePath + '/img';
+    window._orgThemePath = themePath;
     // Set favicon from org theme
     var link = document.createElement('link');
     link.rel = 'icon';
-    link.type = 'image/svg+xml';
-    link.href = themePath + '/img/logo.svg';
+    link.type = 'image/x-icon';
+    link.href = themePath + '/img/favicon.ico';
     document.head.appendChild(link);
   }
 })();
