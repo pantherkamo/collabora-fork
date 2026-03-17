@@ -75,6 +75,24 @@ COPY --from=builder /build/instdir /
 COPY start-collabora-online.sh /start-collabora-online.sh
 RUN chmod +x /start-collabora-online.sh
 
+# Bundle system libraries into lokit/program/ — the from-source build links
+# against system libs, but the chroot jail only has access to /opt/lokit/program/.
+# Pre-built Collabora assets bundle these; our source build does not.
+RUN for lib in \
+    libnspr4.so libnss3.so libnssutil3.so libplc4.so libplds4.so \
+    libsmime3.so libssl3.so libsoftokn3.so libfreebl3.so libfreeblpriv3.so \
+    libnssckbi.so libnssdbm3.so \
+    libfontconfig.so.1 libfreetype.so.6 libpng16.so.16 \
+    libz.so.1 libexpat.so.1 libbz2.so.1.0 \
+    libbrotlidec.so.1 libbrotlicommon.so.1 \
+    libgssapi_krb5.so.2 libkrb5.so.3 libk5crypto.so.3 \
+    libkrb5support.so.0 libkeyutils.so.1 libcom_err.so.2; do \
+    src=$(find /usr/lib /lib -name "$lib" -type f -o -name "$lib" -type l 2>/dev/null | head -1); \
+    if [ -n "$src" ]; then \
+      cp -L "$src" /opt/lokit/program/ && echo "Bundled $lib"; \
+    fi; \
+    done
+
 # set up (normally done by postinstall script of package)
 RUN setcap cap_fowner,cap_chown,cap_sys_chroot=ep /usr/bin/coolforkit-caps && \
     setcap cap_sys_admin=ep /usr/bin/coolmount && \
