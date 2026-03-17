@@ -28,6 +28,10 @@ spec:
         - name: collabora
           image: redis.kamo.svc.cluster.local:5000/kamo/collabora-online:latest
           imagePullPolicy: Always
+          securityContext:
+            capabilities:
+              add:
+                - SYS_ADMIN
           ports:
             - containerPort: 9980
           env:
