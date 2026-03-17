@@ -45,11 +45,13 @@ RUN cd builddir && tar xf poco-1.12.5p2-all.tar.gz && cd poco-1.12.5p2-all/ && \
 
 COPY / $BUILDDIR/
 
-# Cache the core repo and ccache across builds so we don't re-clone
-# LibreOffice core + submodules on every build. build.sh skips cloning
-# if core/ already exists, and ccache speeds up recompilation.
+# Bust the Docker layer cache when the online source changes.
+# The commit SHA changes on every push, forcing build.sh to re-run
+# and git-fetch the latest online source.
+ARG ONLINE_COMMIT_SHA=unknown
 RUN --mount=type=cache,target=/build/builddir/core \
     --mount=type=cache,target=/root/.ccache \
+    echo "Building online commit: $ONLINE_COMMIT_SHA" && \
     bash build.sh
 
 # Build the final image

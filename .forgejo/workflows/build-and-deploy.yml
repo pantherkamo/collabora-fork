@@ -90,6 +90,7 @@ jobs:
           build-args: |
             COLLABORA_ONLINE_REPO=http://k0m1:3000/kamo/collabora-fork.git
             COLLABORA_ONLINE_BRANCH=main
+            ONLINE_COMMIT_SHA=${{ github.sha }}
 
   deploy_k1m1:
     needs: build
