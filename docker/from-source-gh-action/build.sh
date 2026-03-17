@@ -92,7 +92,9 @@ if [ -z "$CORE_ASSETS" ]; then
   ( cd core && ./autogen.sh --with-distro=LibreOfficeOnline \
       --with-product-name="$PRODUCT_NAME" \
       --with-vendor="" ) || exit 1
-  ( cd core && make $CORE_BUILD_TARGET ) || exit 1
+  # Limit to 2 parallel jobs — LibreOffice C++ files use 2-4GB each,
+  # and the shared runner only has 16GB RAM with other tasks running.
+  ( cd core && make -j 2 $CORE_BUILD_TARGET ) || exit 1
 
   mkdir -p "$INSTDIR"/opt/
   cp -a core/instdir "$INSTDIR"/opt/lokit
@@ -124,7 +126,7 @@ done
 # build
 ( cd online && ./autogen.sh ) || exit 1
 ( cd online && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --enable-silent-rules --disable-tests --with-lokit-path="$BUILDDIR"/core/include --with-lo-path=/opt/lokit --with-poco-includes=$BUILDDIR/poco/include --with-poco-libs=$BUILDDIR/poco/lib $ONLINE_EXTRA_BUILD_OPTIONS) || exit 1
-( cd online && make -j $(nproc)) || exit 1
+( cd online && make -j 2) || exit 1
 
 # copy stuff
 ( cd online && DESTDIR="$INSTDIR" make install ) || exit 1
