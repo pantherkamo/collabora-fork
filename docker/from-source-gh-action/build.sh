@@ -92,9 +92,10 @@ if [ -z "$CORE_ASSETS" ]; then
   ( cd core && ./autogen.sh --with-distro=LibreOfficeOnline \
       --with-product-name="$PRODUCT_NAME" \
       --with-vendor="" ) || exit 1
-  # Limit to 2 parallel jobs — LibreOffice C++ files use 2-4GB each,
-  # and the shared runner only has 16GB RAM with other tasks running.
-  ( cd core && make -j 2 $CORE_BUILD_TARGET ) || exit 1
+  # Single-threaded build — the shared runner has 16GB RAM with other
+  # builds competing for resources. LibreOffice C++ files use 2-4GB each
+  # and even -j 2 causes OOM kills on this machine.
+  ( cd core && make -j 1 $CORE_BUILD_TARGET ) || exit 1
 
   mkdir -p "$INSTDIR"/opt/
   cp -a core/instdir "$INSTDIR"/opt/lokit
