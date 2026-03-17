@@ -178,16 +178,24 @@ window.L.Map.WOPI = window.L.Handler.extend({
 			window.brandProductName = wopiInfo['BrandName'];
 		}
 
-		// Set tab title as "Kamo {DocType}: {filename}"
+		// Set tab title as "Kamo {DocType}: {filename}" once doc layer is ready
 		if (this.BreadcrumbDocName) {
-			var docTypeMap = {
-				'text': 'Doc',
-				'spreadsheet': 'Sheet',
-				'presentation': 'Show',
-				'drawing': 'Draw'
+			var self = this;
+			var setTitle = function() {
+				var docTypeMap = {
+					'text': 'Doc',
+					'spreadsheet': 'Sheet',
+					'presentation': 'Show',
+					'drawing': 'Draw'
+				};
+				var docType = docTypeMap[self._map.getDocType()] || 'Doc';
+				document.title = 'Kamo ' + docType + ': ' + self.BreadcrumbDocName;
 			};
-			var docType = docTypeMap[this._map.getDocType()] || 'Doc';
-			document.title = 'Kamo ' + docType + ': ' + this.BreadcrumbDocName;
+			if (this._map.getDocType()) {
+				setTitle();
+			} else {
+				this._map.on('doclayerinit', setTitle);
+			}
 		}
 
 		this.sendFrameReady();

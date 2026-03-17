@@ -308,9 +308,9 @@ class InitializerBase {
 			window.brandProductURL = productURL;
 		}
 		let logoURL = document.getElementById("init-logo-url").value;
-		// Prefer org-specific theme logo over static config
+		// Prefer org-specific theme favicon over static config
 		if (window._orgThemePath) {
-			window.logoURL = window._orgThemePath + '/logo-full.svg';
+			window.logoURL = window._orgThemePath + '/img/favicon.ico';
 		} else if (typeof logoURL === 'string' && logoURL.length) {
 			window.logoURL = logoURL;
 		}
